@@ -1,9 +1,12 @@
 import requests, time
+from tqdm import tqdm
 import pandas as pd
 import spotipy
 import re
 from spotipy import oauth2
 from spotipy import SpotifyException
+
+from config import *
 
 def get_scrobbles(method='recenttracks', username=lfusername , key=lfkey, limit=200, extended=0, page=1, pages=0):
     '''
@@ -36,8 +39,7 @@ def get_scrobbles(method='recenttracks', username=lfusername , key=lfkey, limit=
     print('{} total pages to retrieve'.format(total_pages))
 
     # request each page of data one at a time
-    for page in range(1, int(total_pages) + 1, 1):
-        if page % 10 == 0: print(page, end=' ')
+    for page in tqdm(range(1, int(total_pages) + 1, 1)):
         time.sleep(0.20)
         request_url = url.format(method, username, key, limit, extended, page)
         responses.append(requests.get(request_url))
@@ -58,14 +60,16 @@ def get_scrobbles(method='recenttracks', username=lfusername , key=lfkey, limit=
 
     # create and populate a dataframe to contain the data
     df = pd.DataFrame()
+    df['timestamp'] = timestamps
+    df['datetime'] = pd.to_datetime(df['timestamp'].astype(int), unit='s')
+    df['datetime'] = df['datetime'].dt.tz_localize('UTC').dt.tz_convert('Asia/Kolkata') #use your own timezone
     df['artist'] = artist_names
     df['artist_mbid'] = artist_mbids
     df['album'] = album_names
     df['album_mbid'] = album_mbids
     df['track'] = track_names
     df['track_mbid'] = track_mbids
-    df['timestamp'] = timestamps
-    df['datetime'] = pd.to_datetime(df['timestamp'].astype(int), unit='s')
-    df['datetime'] = df['datetime'].dt.tz_localize('UTC').dt.tz_convert('Asia/Kolkata')
 
     return df
+
+scrobblesDF = get_scrobbles(pages=0)
