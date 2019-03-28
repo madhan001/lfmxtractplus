@@ -72,4 +72,30 @@ def get_scrobbles(method='recenttracks', username=lfusername , key=lfkey, limit=
 
     return df
 
-scrobblesDF = get_scrobbles(pages=0)
+def tokenRefresh():
+    '''used to refresh OAuth token'''
+    global token_info, sp
+
+    if sp_oauth._is_token_expired(token_info):
+        token_info = sp_oauth.refresh_access_token(token_info['refresh_token'])
+        token = token_info['access_token']
+        sp = spotipy.Spotify(auth=token)
+
+
+def getSpotifyToken(cid,secret):
+    sp_oauth = oauth2.SpotifyOAuth(client_id=cid, client_secret=secret, redirect_uri='https://example.com/callback/',
+                                   scope='user-library-read')
+    token_info = sp_oauth.get_cached_token()
+    if not token_info:
+        auth_url = sp_oauth.get_authorize_url()
+        print(auth_url)
+        response = input('Paste the above link into your browser, then paste the redirect url here: ')
+
+        code = sp_oauth.parse_response_code(response)
+        token_info = sp_oauth.get_access_token(code)
+
+        token = token_info['access_token']
+        return token
+
+
+
