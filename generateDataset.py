@@ -1,6 +1,7 @@
 import requests, time
 from tqdm import tqdm
 import pandas as pd
+import numpy as np
 import spotipy
 import re
 from spotipy import oauth2
@@ -8,94 +9,51 @@ from spotipy import SpotifyException
 
 from config import *
 
-def get_scrobbles(method='recenttracks', username=lfusername , key=lfkey, limit=200, extended=0, page=1, pages=0):
-    '''
-    method: api method
-    username/key: api credentials
-    limit: api lets you retrieve up to 200 records per call
-    extended: api lets you retrieve extended data for each track, 0=no, 1=yes
-    page: page of results to start retrieving at
-    pages: how many pages of results to retrieve. if 0, get as many as api can return.
-    '''
-    # initialize url and lists to contain response fields
-    print("Fetching data from last.fm")
-    url = 'https://ws.audioscrobbler.com/2.0/?method=user.get{}&user={}&api_key={}&limit={}&extended={}&page={}&format=json'
-    responses = []
-    artist_names = []
-    artist_mbids = []
-    album_names = []
-    album_mbids = []
-    track_names = []
-    track_mbids = []
-    timestamps = []
+class Authentication:
 
-    # make first request, just to get the total number of pages
-    request_url = url.format(method, username, key, limit, extended, page)
-    response = requests.get(request_url).json()
-    total_pages = int(response[method]['@attr']['totalPages'])
-    if pages > 0:
-        total_pages = min([total_pages, pages])
+    def __init__(self, spot_cid ,spot_secret):
+        '''
+        Initialize Authentication object
+        :param spot_cid: Spotify client ID
+        :param spot_secret: Spotify client secret
+        '''
+        self.cid = spot_cid
+        self.secret = spot_secret
 
-    print('{} total pages to retrieve'.format(total_pages))
+    def getSpotifyToken(self):
+        '''
+        Used to get OAuth token from spotify.
+        :return OAuth token
+        '''
+        self.sp_oauth = oauth2.SpotifyOAuth(client_id=self.cid, client_secret=self.secret,
+                                       redirect_uri='https://example.com/callback/',
+                                       scope='user-library-read')
+        self.token_info = self.sp_oauth.get_cached_token()
+        if not self.token_info:
+            auth_url = self.sp_oauth.get_authorize_url()
+            print(auth_url)
+            response = input('Paste the above link into your browser, then paste the redirect url here: ')
 
-    # request each page of data one at a time
-    for page in tqdm(range(1, int(total_pages) + 1, 1)):
-        time.sleep(0.20)
-        request_url = url.format(method, username, key, limit, extended, page)
-        responses.append(requests.get(request_url))
+            code = self.sp_oauth.parse_response_code(response)
+            self.token_info = self.sp_oauth.get_access_token(code)
 
-    # parse the fields out of each scrobble in each page (aka response) of scrobbles
-    for response in responses:
-        scrobbles = response.json()
-        for scrobble in scrobbles[method]['track']:
-            # only retain completed scrobbles (aka, with timestamp and not 'now playing')
-            if 'date' in scrobble.keys():
-                artist_names.append(scrobble['artist']['#text'])
-                artist_mbids.append(scrobble['artist']['mbid'])
-                album_names.append(scrobble['album']['#text'])
-                album_mbids.append(scrobble['album']['mbid'])
-                track_names.append(scrobble['name'])
-                track_mbids.append(scrobble['mbid'])
-                timestamps.append(scrobble['date']['uts'])
+            token = self.token_info['access_token']
+            return token
 
-    # create and populate a dataframe to contain the data
-    df = pd.DataFrame()
-    df['timestamp'] = timestamps
-    df['datetime'] = pd.to_datetime(df['timestamp'].astype(int), unit='s')
-    df['datetime'] = df['datetime'].dt.tz_localize('UTC').dt.tz_convert('Asia/Kolkata') #use your own timezone
-    df['artist'] = artist_names
-    df['artist_mbid'] = artist_mbids
-    df['album'] = album_names
-    df['album_mbid'] = album_mbids
-    df['track'] = track_names
-    df['track_mbid'] = track_mbids
-
-    return df
-
-def tokenRefresh():
-    '''used to refresh OAuth token'''
-    global token_info, sp
-
-    if sp_oauth._is_token_expired(token_info):
-        token_info = sp_oauth.refresh_access_token(token_info['refresh_token'])
-        token = token_info['access_token']
-        sp = spotipy.Spotify(auth=token)
+    def tokenRefresh(self): #todo:fix an issue where tokenRefresh() runs over and over after an exception
+        '''
+        Used to refresh OAuth token if running time exceeds 60 mins
+        '''
+        global sp
+        if  self.sp_oauth._is_token_expired(self.token_info):  # todo refer https://stackoverflow.com/questions/11154634/call-nested-function-in-python
+            self.token_info = self.sp_oauth.refresh_access_token(self.token_info['refresh_token'])
+            self.token = self.token_info['access_token']
+            sp = spotipy.Spotify(auth=self.token) #hmmmm may be faulty
+        print("________token refreshed_______")
 
 
-def getSpotifyToken(cid,secret):
-    sp_oauth = oauth2.SpotifyOAuth(client_id=cid, client_secret=secret, redirect_uri='https://example.com/callback/',
-                                   scope='user-library-read')
-    token_info = sp_oauth.get_cached_token()
-    if not token_info:
-        auth_url = sp_oauth.get_authorize_url()
-        print(auth_url)
-        response = input('Paste the above link into your browser, then paste the redirect url here: ')
-
-        code = sp_oauth.parse_response_code(response)
-        token_info = sp_oauth.get_access_token(code)
-
-        token = token_info['access_token']
-        return token
 
 
+Au = Authentication(spot_secret=secret, spot_cid=cid)
+sp = spotipy.Spotify(auth=Au.getSpotifyToken()) #create spotify object globally
 
