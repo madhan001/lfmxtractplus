@@ -247,15 +247,26 @@ def mapAudioFeatures(scrobblesDF):  #todo: [for v2]pass 50 IDs at once in chunks
 
     return scrobblesDF
 
+
+
 token_info,sp_oauth = getSpotifyTokenInfo() #authenticate with spotify
 sp = spotipy.Spotify(auth=token_info['access_token']) #create spotify object globally
 start_time = time.time() #get running time for the script
 
 scrobblesDF_lastfm = get_scrobbles(pages=0)#get all pages form lastfm with pages = 0
-scrobblesDF_wTrackID = mapToSpotify(scrobblesDF_lastfm)
-scrobblesDF_complete = mapAudioFeatures(scrobblesDF_wTrackID)
 
-scrobblesDF_complete.to_csv("data\LFMscrobbles.tsv", sep='\t')
+scrobblesDF_condensed = scrobblesDF_lastfm[['artist_name','track_name']]
+
+scrobblesDF_uniques = scrobblesDF_condensed.groupby(['artist_name','track_name']).size().reset_index()
+scrobblesDF_uniques.rename(columns = {0: 'frequency'}, inplace = True)
+
+scrobblesDF_wTrackID_uniques = mapToSpotify(scrobblesDF_uniques)
+scrobblesDF_wFeatures_uniques = mapAudioFeatures(scrobblesDF_wTrackID_uniques)
+
+scrobblesDF_complete = pd.merge(scrobblesDF_lastfm,scrobblesDF_wFeatures_uniques,how='left',on=['track_name','artist_name'])
+
+
+scrobblesDF_complete.to_csv("data\LFMscrobbles.tsv", sep='\t') #using tsv as some attributes contain commas
 
 end_time = time.time()
 
