@@ -7,49 +7,43 @@ import re
 from spotipy import oauth2
 from spotipy import SpotifyException
 
-from config import *
+from config import * #get api keys from config.py
 
-class Authentication:
 
-    def __init__(self, spot_cid ,spot_secret):
-        '''
-        Initialize Authentication object
-        :param spot_cid: Spotify client ID
-        :param spot_secret: Spotify client secret
-        '''
-        self.cid = spot_cid
-        self.secret = spot_secret
+def getSpotifyTokenInfo():
+    '''
+    Used to get OAuth token from spotify.
+    :return token_info dict
+    :return sp_oauth object
+    '''
+    sp_oauth = oauth2.SpotifyOAuth(client_id=cid, client_secret=secret,
+                                   redirect_uri='https://example.com/callback/',
+                                   scope='user-library-read')
+    token_info = sp_oauth.get_cached_token()
+    if not token_info:
+        auth_url = sp_oauth.get_authorize_url()
+        print(auth_url)
+        response = input('Paste the above link into your browser, then paste the redirect url here: ')
 
-    def getSpotifyToken(self):
-        '''
-        Used to get OAuth token from spotify.
-        :return OAuth token
-        '''
-        self.sp_oauth = oauth2.SpotifyOAuth(client_id=self.cid, client_secret=self.secret,
-                                       redirect_uri='https://example.com/callback/',
-                                       scope='user-library-read')
-        self.token_info = self.sp_oauth.get_cached_token()
-        if not self.token_info:
-            auth_url = self.sp_oauth.get_authorize_url()
-            print(auth_url)
-            response = input('Paste the above link into your browser, then paste the redirect url here: ')
+        code = sp_oauth.parse_response_code(response)
+        token_info = sp_oauth.get_access_token(code)
 
-            code = self.sp_oauth.parse_response_code(response)
-            self.token_info = self.sp_oauth.get_access_token(code)
+        return token_info,sp_oauth
 
-            self.token = self.token_info['access_token']
-            return self.token
+def tokenRefresh(token_info,sp_oauth):
+    '''
+    :param token_info dict
+    :param sp_oauth object
+    Used to refresh OAuth token if token expired
+    '''
+    global sp
+    if  sp_oauth._is_token_expired(token_info):
+        token_info_ref = sp_oauth.refresh_access_token(token_info['refresh_token'])
+        token_ref = token_info_ref['access_token']
+        sp = spotipy.Spotify(auth=token_ref)
+        print("________token refreshed________")
 
-    def tokenRefresh(self): #todo:fix an issue where tokenRefresh() runs over and over after an exception
-        '''
-        Used to refresh OAuth token if running time exceeds 60 mins.
-        '''
-        global sp
-        if  self.sp_oauth._is_token_expired(self.token_info):  # todo refer https://stackoverflow.com/questions/11154634/call-nested-function-in-python
-            self.token_info = self.sp_oauth.refresh_access_token(self.token_info['refresh_token'])
-            self.token = self.token_info['access_token']
-            self.sp = spotipy.Spotify(auth=self.token) #hmmmm may be faulty
-            print("________token refreshed_______")
+
 
 def get_scrobbles(method='recenttracks', username=lfusername , key=lfkey, limit=200, extended=0, page=1, pages=0):
     '''
@@ -108,20 +102,19 @@ def get_scrobbles(method='recenttracks', username=lfusername , key=lfkey, limit=
     df['timestamp'] = timestamps
     df['datetime'] = pd.to_datetime(df['timestamp'].astype(int), unit='s')
     df['datetime'] = df['datetime'].dt.tz_localize('UTC').dt.tz_convert('Asia/Kolkata') #use your own timezone
-    df['artist'] = artist_names
+    df['artist_name'] = artist_names
     df['artist_mbid'] = artist_mbids
-    df['album'] = album_names
+    df['album_name'] = album_names
     df['album_mbid'] = album_mbids
-    df['track'] = track_names
+    df['track_name'] = track_names
     df['track_mbid'] = track_mbids
 
     return df
 
 
-def mapToSpotify(sp,scrobblesDF): #todo : [for v2]use a better approach instead of bruteforcing
+def mapToSpotify(scrobblesDF): #todo : [for v2]use a better approach instead of bruteforcing
     """
     Maps track names to spotifyID and adds track length,popularity,genre to dataframe.
-    :param sp : spotipy object
     :param scrobblesDF : lastfm scrobbles dataframe
     :return dataframe with spotifyID ,track length,popularity,genre
     """
@@ -131,13 +124,13 @@ def mapToSpotify(sp,scrobblesDF): #todo : [for v2]use a better approach instead 
     genre = []
     for index, row in tqdm(scrobblesDF.iterrows()):
         try:
-            artist = re.sub("'", '', row['artist'])  # remove single quotes from queries
-            track = re.sub("'", '', row['track'])
+            artist = re.sub("'", '', row['artist_name'])  # remove single quotes from queries
+            track = re.sub("'", '', row['track_name'])
 
-            searchDict = sp.search(q='artist:' + artist + ' track:' + track, type='track', limit=1, market='US') #using US for max compatibility
+            searchDict = sp.search(q='artist:' + artist + ' track:' + track, type='track', limit=1, market='US') #api cakk
 
             print("\n"+track)
-            print("Mapping spotifyID for " + str(index) + " out of " + str(len(scrobblesDF.index)))
+            print("Mapping spotifyID for " + str(index) + " out of " + str(len(scrobblesDF.index)-1))
 
             if len(searchDict['tracks']['items']) != 0:
                 track_ids.append(searchDict['tracks']['items'][0]['id'])
@@ -146,7 +139,7 @@ def mapToSpotify(sp,scrobblesDF): #todo : [for v2]use a better approach instead 
                 artist_id = searchDict['tracks']['items'][0]['artists'][0]['id']
                 artist = sp.artist(artist_id) #get genre from artist
                 try:
-                    genreA = artist['genres'][0]  #gets only the first genre from list of genres
+                    genreA = artist['genres'][0]  #gets only the first genre from list of genres (may be inaccurate)
                     genre.append(genreA)
                 except IndexError:
                     genre.append(np.nan)
@@ -158,16 +151,19 @@ def mapToSpotify(sp,scrobblesDF): #todo : [for v2]use a better approach instead 
                 genre.append(np.nan)
                 print("failed to map " + track)
         except SpotifyException:
-            Au.tokenRefresh()
+            if sp_oauth._is_token_expired(token_info):
+                tokenRefresh(token_info,sp_oauth) #refresh OAuth token
+            else:
+                print("SpotifyException")
 
     scrobblesDF['trackID'] = pd.Series(track_ids)
     scrobblesDF['lengthMS'] = pd.Series(length)
     scrobblesDF['popularity'] = pd.Series(pop)
-    scrobblesDF['genre'] = pd.Series(genre)
+    scrobblesDF['genre_name'] = pd.Series(genre)
 
     return scrobblesDF
 
-def mapAudioFeatures(sp, scrobblesDF):  #todo: [for v2]pass 100 IDs at once in chunks to sp.audio_features to speedup
+def mapAudioFeatures(scrobblesDF):  #todo: [for v2]pass 50 IDs at once in chunks to sp.audio_features to speedup
     '''
     Adds track features to dataframe with SpotifyID.
     :param scrobblesDF: dataframe with SpotifyID
@@ -187,10 +183,10 @@ def mapAudioFeatures(sp, scrobblesDF):  #todo: [for v2]pass 100 IDs at once in c
 
     for index, row in tqdm(scrobblesDF.iterrows()):
         try:
+            print("\n\nFetching features for " + str(index) + " out of " + str(len(scrobblesDF.index) - 1))
             if row['trackID'] is not np.nan:
                 search_id = [str(row['trackID'])]
-                print("\nFetching features for " + str(index) + " out of " + str(len(scrobblesDF.index)))
-                feature = sp.audio_features(search_id)
+                feature = sp.audio_features(search_id) #api call
                 try:
                     danceabilitySeries.append(feature[0]["danceability"])
                     energySeries.append(feature[0]["energy"])
@@ -204,7 +200,7 @@ def mapAudioFeatures(sp, scrobblesDF):  #todo: [for v2]pass 100 IDs at once in c
                     tempoSeries.append(feature[0]["tempo"])
                     instrumentalnessSeries.append(feature[0]["instrumentalness"])
                 except (TypeError, AttributeError, IndexError) :
-                    print("\ntrack feature fetch failed for  " + row['track'])
+                    print("\nTrack feature fetch failed for  " + row['track_name'])
                     danceabilitySeries.append(np.nan)
                     energySeries.append(np.nan)
                     keySeries.append(np.nan)
@@ -218,6 +214,7 @@ def mapAudioFeatures(sp, scrobblesDF):  #todo: [for v2]pass 100 IDs at once in c
                     instrumentalnessSeries.append(np.nan)
 
             else:
+                print("\nTrack ID not available for " + row['track_name'])
                 danceabilitySeries.append(np.nan)
                 energySeries.append(np.nan)
                 keySeries.append(np.nan)
@@ -228,9 +225,13 @@ def mapAudioFeatures(sp, scrobblesDF):  #todo: [for v2]pass 100 IDs at once in c
                 livenessSeries.append(np.nan)
                 valenceSeries.append(np.nan)
                 tempoSeries.append(np.nan)
+                instrumentalnessSeries.append(np.nan)
                 continue
-        except SpotifyException : #kicks in when script runs for more than 60 mins
-            Au.tokenRefresh()
+        except SpotifyException :
+            if sp_oauth._is_token_expired(token_info):
+                tokenRefresh(token_info,sp_oauth) #refresh OAuth token
+            else:
+                print("SpotifyException")
 
     scrobblesDF['danceability'] = danceabilitySeries
     scrobblesDF['energy'] = energySeries
@@ -246,21 +247,20 @@ def mapAudioFeatures(sp, scrobblesDF):  #todo: [for v2]pass 100 IDs at once in c
 
     return scrobblesDF
 
-Au = Authentication(spot_secret=secret, spot_cid=cid)
-sp = spotipy.Spotify(auth=Au.getSpotifyToken()) #create spotify object globally
-
+token_info,sp_oauth = getSpotifyTokenInfo() #authenticate with spotify
+sp = spotipy.Spotify(auth=token_info['access_token']) #create spotify object globally
 start_time = time.time() #get running time for the script
 
-scrobblesDF = get_scrobbles(pages=0)#get all pages form lastfm with pages = 0
-scrobblesDF2 = mapToSpotify(sp, scrobblesDF)
-scrobblesDF3 = mapAudioFeatures(sp, scrobblesDF2)
+scrobblesDF_lastfm = get_scrobbles(pages=0)#get all pages form lastfm with pages = 0
+scrobblesDF_wTrackID = mapToSpotify(scrobblesDF_lastfm)
+scrobblesDF_complete = mapAudioFeatures(scrobblesDF_wTrackID)
 
-scrobblesDF3.to_csv("data\LFMscrobbles.tsv", sep='\t')
+scrobblesDF_complete.to_csv("data\LFMscrobbles.tsv", sep='\t')
 
 end_time = time.time()
 
 start_time = start_time/60
-end_time = end_time/60
+end_time = end_time/60 #show time in minutes
 
 
 print("Finished in "+str(end_time-start_time)+" mins" )
