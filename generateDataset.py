@@ -248,6 +248,11 @@ def mapAudioFeatures(scrobblesDF):  #todo: [for v2]pass 50 IDs at once in chunks
     return scrobblesDF
 
 def generateDataset(lfusername,pages):
+    '''
+    :param lfusername: last.fm username
+    :param pages: number of pages to retrieve, use pages = 0 to retrieve full listening history
+    :return: completely enriched dataframe with trackID and audio features
+    '''
     global token_info,sp,sp_oauth
     token_info, sp_oauth = getSpotifyTokenInfo()  # authenticate with spotify
     sp = spotipy.Spotify(auth=token_info['access_token'])  # create spotify object globally
