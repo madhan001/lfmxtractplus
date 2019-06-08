@@ -17,8 +17,7 @@ def getSpotifyTokenInfo():
     :return sp_oauth object
     '''
     sp_oauth = oauth2.SpotifyOAuth(client_id=cid, client_secret=secret,
-                                   redirect_uri='https://example.com/callback/',
-                                   scope='user-library-read')
+                                   redirect_uri='https://example.com/callback/',)
     token_info = sp_oauth.get_cached_token()
     if not token_info:
         auth_url = sp_oauth.get_authorize_url()
@@ -112,7 +111,7 @@ def get_scrobbles(method='recenttracks', username=lfusername , key=lfkey, limit=
     return df
 
 
-def mapToSpotify(scrobblesDF): #todo : [for v2]use a better approach instead of bruteforcing
+def mapToSpotify(scrobblesDF):
     """
     Maps track names to spotifyID and adds track length,popularity,genre to dataframe.
     :param scrobblesDF : lastfm scrobbles dataframe
@@ -251,7 +250,7 @@ def generateDataset(lfusername,pages):
     '''
     :param lfusername: last.fm username
     :param pages: number of pages to retrieve, use pages = 0 to retrieve full listening history
-    :return: completely enriched dataframe with trackID and audio features
+    :return: dictionary with two dataframes (complete with timestamps and library contents)
     '''
     global token_info,sp,sp_oauth
     token_info, sp_oauth = getSpotifyTokenInfo()  # authenticate with spotify
@@ -268,12 +267,30 @@ def generateDataset(lfusername,pages):
     scrobblesDF_wFeatures_uniques = mapAudioFeatures(scrobblesDF_wTrackID_uniques)
 
     scrobblesDF_complete = pd.merge(scrobblesDF_lastfm, scrobblesDF_wFeatures_uniques, how='left',on=['track_name', 'artist_name'])
-    return scrobblesDF_complete
+    scrobblesDFdict = dict()
+    scrobblesDFdict['complete'] = scrobblesDF_complete
+    scrobblesDFdict['library'] = scrobblesDF_wFeatures_uniques
+
+    return scrobblesDFdict
 
 
+def mappingStats(scrobblesDF):
+    '''
+    :param scrobblesDFdict: dataframe with scrobbled tracks and trackIDs
+    :return: tuple with number of unmapped and overall counts
+    '''
+    count = scrobblesDF['track_name'].count()
+    naCount = scrobblesDF['trackID'].isnull().sum()
+    return naCount, count
+
+#driver code
 start_time = time.time()  #get running time for the script
-scrobbles_complete = generateDataset(lfusername,0)
-scrobbles_complete.to_csv("data\LFMscrobbles.tsv", sep='\t') #using tsv as some attributes contain commas
+scrobblesDFdict = generateDataset(lfusername,0) #returns a dict
+print("couldn't map "+str(mappingStats(scrobblesDFdict['complete'])[0])+"out of "+str(mappingStats(scrobblesDFdict['complete'])[1]) +"(with timestamps)")
+print("================================")
+print("couldn't map "+str(mappingStats(scrobblesDFdict['library'])[0])+"out of "+str(mappingStats(scrobblesDFdict['library'])[1]) +"(with timestamps)")
+
+#scrobbles_complete.to_csv("data\LFMscrobbles.tsv", sep='\t') #using tsv as some attributes contain commas
 end_time = time.time()
 
 start_time = start_time/60
