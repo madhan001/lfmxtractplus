@@ -44,7 +44,7 @@ def tokenRefresh(token_info,sp_oauth):
 
 
 
-def get_scrobbles(method='recenttracks', username=lfusername , key=lfkey, limit=200, extended=0, page=1, pages=0):
+def getScrobbles(method='recenttracks', username=lfusername , key=lfkey, limit=200, extended=0, page=1, pages=0):
     '''
     :param method: api method
     :param username/key: api credentials
@@ -256,7 +256,7 @@ def generateDataset(lfusername,pages):
     token_info, sp_oauth = getSpotifyTokenInfo()  # authenticate with spotify
     sp = spotipy.Spotify(auth=token_info['access_token'])  # create spotify object globally
 
-    scrobblesDF_lastfm = get_scrobbles(username=lfusername,pages=pages)  # get all pages form lastfm with pages = 0
+    scrobblesDF_lastfm = getScrobbles(username=lfusername,pages=pages)  # get all pages form lastfm with pages = 0
 
     scrobblesDF_condensed = scrobblesDF_lastfm[['artist_name', 'track_name']]
 
