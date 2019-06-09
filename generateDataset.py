@@ -246,9 +246,9 @@ def mapAudioFeatures(scrobblesDF):  #todo: [for v2]pass 50 IDs at once in chunks
 
     return scrobblesDF
 
-def generateDataset(lfusername,pages):
+def generateDataset(lfuname=lfusername,pages=0):
     '''
-    :param lfusername: last.fm username
+    :param lfuname: last.fm username
     :param pages: number of pages to retrieve, use pages = 0 to retrieve full listening history
     :return: dictionary with two dataframes (complete with timestamps and library contents)
     '''
@@ -256,7 +256,7 @@ def generateDataset(lfusername,pages):
     token_info, sp_oauth = getSpotifyTokenInfo()  # authenticate with spotify
     sp = spotipy.Spotify(auth=token_info['access_token'])  # create spotify object globally
 
-    scrobblesDF_lastfm = getScrobbles(username=lfusername,pages=pages)  # get all pages form lastfm with pages = 0
+    scrobblesDF_lastfm = getScrobbles(username=lfuname,pages=pages)  # get all pages form lastfm with pages = 0
 
     scrobblesDF_condensed = scrobblesDF_lastfm[['artist_name', 'track_name']]
 
@@ -283,6 +283,8 @@ def mappingStats(scrobblesDF):
     naCount = scrobblesDF['trackID'].isnull().sum()
     return naCount, count
 
+#todo add functions to pull a playlist
+"""
 #driver code
 start_time = time.time()  #get running time for the script
 scrobblesDFdict = generateDataset(lfusername,0) #returns a dict
@@ -298,3 +300,4 @@ end_time = end_time/60 #show time in minutes
 
 
 print("Finished in "+str(end_time-start_time)+" mins" )
+"""
