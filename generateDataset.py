@@ -273,31 +273,34 @@ def generateDataset(lfuname=lfusername,pages=0):
 
     return scrobblesDFdict
 
-
-def mappingStats(scrobblesDF):
+def unmappedTracks(scrobblesDF):
     '''
-    :param scrobblesDFdict: dataframe with scrobbled tracks and trackIDs
-    :return: tuple with number of unmapped and overall counts
+    :param scrobblesDF: dataframe with scrobbled tracks and trackIDs
+    :return: dataframe containing tracks with no trackIDs
     '''
-    count = scrobblesDF['track_name'].count()
-    naCount = scrobblesDF['trackID'].isnull().sum()
-    return naCount, count
 
-#todo add functions to pull a playlist
-"""
-#driver code
-start_time = time.time()  #get running time for the script
-scrobblesDFdict = generateDataset(lfusername,0) #returns a dict
-print("couldn't map "+str(mappingStats(scrobblesDFdict['complete'])[0])+"out of "+str(mappingStats(scrobblesDFdict['complete'])[1]) +"(with timestamps)")
-print("================================")
-print("couldn't map "+str(mappingStats(scrobblesDFdict['library'])[0])+"out of "+str(mappingStats(scrobblesDFdict['library'])[1]) +"(with timestamps)")
-
-#scrobbles_complete.to_csv("data\LFMscrobbles.tsv", sep='\t') #using tsv as some attributes contain commas
-end_time = time.time()
-
-start_time = start_time/60
-end_time = end_time/60 #show time in minutes
+    noTrackID_df = scrobblesDF[scrobblesDF['trackID'].isnull()]
+    return noTrackID_df
 
 
-print("Finished in "+str(end_time-start_time)+" mins" )
-"""
+
+def main():
+    start_time = time.time()  #get running time for the script
+    scrobblesDFdict = generateDataset(lfusername,10) #returns a dict
+    scrobblesDFdict['library'].head(20)
+    print("================================")
+    missingTrID = unmappedTracks(scrobblesDFdict['library'])
+    missingTrID.head(20)
+    missingTrID = unmappedTracks(scrobblesDFdict['complete'])
+    missingTrID.head(20)
+    #scrobbles_complete.to_csv("data\LFMscrobbles.tsv", sep='\t') #using tsv as some attributes contain commas
+    end_time = time.time()
+
+    start_time = start_time/60
+    end_time = end_time/60 #show time in minutes
+
+
+    print("Finished in "+str(end_time-start_time)+" mins" )
+
+if __name__ == '__main__':
+    main()
