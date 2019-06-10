@@ -42,6 +42,10 @@ def tokenRefresh(token_info,sp_oauth):
         sp = spotipy.Spotify(auth=token_ref)
         print("________token refreshed________")
 
+def authenticate():
+    global token_info,sp,sp_oauth
+    token_info, sp_oauth = getSpotifyTokenInfo()  # authenticate with spotify
+    sp = spotipy.Spotify(auth=token_info['access_token'])  # create spotify object globally
 
 
 def getScrobbles(method='recenttracks', username=lfusername , key=lfkey, limit=200, extended=0, page=1, pages=0):
@@ -252,9 +256,6 @@ def generateDataset(lfuname=lfusername,pages=0):
     :param pages: number of pages to retrieve, use pages = 0 to retrieve full listening history
     :return: dictionary with two dataframes (complete with timestamps and library contents)
     '''
-    global token_info,sp,sp_oauth
-    token_info, sp_oauth = getSpotifyTokenInfo()  # authenticate with spotify
-    sp = spotipy.Spotify(auth=token_info['access_token'])  # create spotify object globally
 
     scrobblesDF_lastfm = getScrobbles(username=lfuname,pages=pages)  # get all pages form lastfm with pages = 0
 
@@ -286,6 +287,7 @@ def unmappedTracks(scrobblesDF):
 
 def main():
     start_time = time.time()  #get running time for the script
+    authenticate() #authenicate with spotify
     scrobblesDFdict = generateDataset(lfusername,10) #returns a dict
     scrobblesDFdict['library'].head(20)
     print("================================")
