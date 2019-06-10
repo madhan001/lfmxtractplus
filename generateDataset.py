@@ -250,6 +250,49 @@ def mapAudioFeatures(scrobblesDF):  #todo: [for v2]pass 50 IDs at once in chunks
 
     return scrobblesDF
 
+def getPlaylist(user = 'billboard.com', playlist_id = '6UeSakyzhiEt4NB3UAd6NQ'):
+
+    trackID = []
+    track = []
+    artist = []
+    artistID = []
+    genre = []
+    lengthMS = []
+    popularity = []
+
+    playlist = sp.user_playlist(user=user ,playlist_id=playlist_id)
+    count = playlist['tracks']['total']
+    print("Fetching playlist")
+    for i in tqdm(range(count)):
+        #print('fetching   ' + str(i) + ' out of ' + str(count) + '   ' + playlist['tracks']['items'][i]['track']['id'])
+        trackID.append(playlist['tracks']['items'][i]['track']['id'])
+        track.append(playlist['tracks']['items'][i]['track']['name'])
+        lengthMS.append(playlist['tracks']['items'][i]['track']['duration_ms'])
+        popularity.append(playlist['tracks']['items'][i]['track']['popularity'])
+        artist.append(playlist['tracks']['items'][i]['track']['artists'][0]['name'])
+        artistID.append(playlist['tracks']['items'][i]['track']['artists'][0]['id'])
+
+        artistOb = sp.artist(artistID[i])
+        try:
+            genreA = artistOb['genres'][0]
+            genre.append(genreA)
+        except IndexError:
+            genre.append(None)
+
+    playlistDF = pd.DataFrame()
+
+    playlistDF['track'] = pd.Series(track)
+    playlistDF['trackID'] = pd.Series(trackID)
+    playlistDF['artist'] = pd.Series(artist)
+    playlistDF['artistID'] = pd.Series(artistID)
+    playlistDF['genre'] = pd.Series(genre)
+    playlistDF['lengthMS'] = pd.Series(lengthMS)
+    playlistDF['popularity'] = pd.Series(popularity)
+
+    playlistDF = mapAudioFeatures(playlistDF)
+
+    return playlistDF
+
 def generateDataset(lfuname=lfusername,pages=0):
     '''
     :param lfuname: last.fm username
@@ -288,6 +331,8 @@ def unmappedTracks(scrobblesDF):
 def main():
     start_time = time.time()  #get running time for the script
     authenticate() #authenicate with spotify
+
+    '''
     scrobblesDFdict = generateDataset(lfusername,10) #returns a dict
     scrobblesDFdict['library'].head(20)
     print("================================")
@@ -296,6 +341,10 @@ def main():
     missingTrID = unmappedTracks(scrobblesDFdict['complete'])
     missingTrID.head(20)
     #scrobbles_complete.to_csv("data\LFMscrobbles.tsv", sep='\t') #using tsv as some attributes contain commas
+    '''
+    playlist = getPlaylist()
+    playlist.head(50)
+    print(playlist)
     end_time = time.time()
 
     start_time = start_time/60
