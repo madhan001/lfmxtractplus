@@ -43,6 +43,9 @@ def tokenRefresh(token_info,sp_oauth):
         print("________token refreshed________")
 
 def authenticate():
+    '''
+    authenticate with spotify
+    '''
     global token_info,sp,sp_oauth
     token_info, sp_oauth = getSpotifyTokenInfo()  # authenticate with spotify
     sp = spotipy.Spotify(auth=token_info['access_token'])  # create spotify object globally
