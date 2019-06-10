@@ -251,6 +251,12 @@ def mapAudioFeatures(scrobblesDF):  #todo: [for v2]pass 50 IDs at once in chunks
     return scrobblesDF
 
 def getPlaylist(user = 'billboard.com', playlist_id = '6UeSakyzhiEt4NB3UAd6NQ'):
+    '''
+    maps track features to a playlist (Billboard Hot 100 is the default playlist)
+    :param user: username of the playlist owner
+    :param playlist_id: playlist id (found at the end of a playlist url)
+    :return: a dataframe with audio features of a playlist
+    '''
 
     trackID = []
     track = []
