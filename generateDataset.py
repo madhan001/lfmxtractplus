@@ -51,12 +51,11 @@ def authenticate():
     sp = spotipy.Spotify(auth=token_info['access_token'])  # create spotify object globally
 
 
-def getScrobbles(method='recenttracks', username=lfusername , key=lfkey, limit=200, extended=0, page=1, pages=0):
+def getScrobbles(username = lfusername, method='recenttracks', key=lfkey, limit=200, page=1, pages=0):
     '''
     :param method: api method
     :param username/key: api credentials
     :param limit: api lets you retrieve up to 200 records per call
-    :param extended: api lets you retrieve extended data for each track, 0=no, 1=yes
     :param page: page of results to start retrieving at
     :param pages: how many pages of results to retrieve. if 0, get as many as api can return.
 
@@ -73,7 +72,7 @@ def getScrobbles(method='recenttracks', username=lfusername , key=lfkey, limit=2
     track_names = []
     track_mbids = []
     timestamps = []
-
+    extended = 0
     # make first request, just to get the total number of pages
     request_url = url.format(method, username, key, limit, extended, page)
     response = requests.get(request_url).json()
@@ -302,7 +301,7 @@ def getPlaylist(user = 'billboard.com', playlist_id = '6UeSakyzhiEt4NB3UAd6NQ'):
 
     return playlistDF
 
-def generateDataset(lfuname=lfusername,pages=0):
+def generateDataset(lfuname,pages=0):
     '''
     :param lfuname: last.fm username
     :param pages: number of pages to retrieve, use pages = 0 to retrieve full listening history
