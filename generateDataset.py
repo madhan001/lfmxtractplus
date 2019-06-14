@@ -340,19 +340,11 @@ def main():
     start_time = time.time()  #get running time for the script
     authenticate() #authenicate with spotify
 
-    '''
-    scrobblesDFdict = generateDataset(lfusername,10) #returns a dict
+    scrobblesDFdict = generateDataset(lfusername,0) #returns a dict
     scrobblesDFdict['library'].head(20)
     print("================================")
-    missingTrID = unmappedTracks(scrobblesDFdict['library'])
-    missingTrID.head(20)
-    missingTrID = unmappedTracks(scrobblesDFdict['complete'])
-    missingTrID.head(20)
     #scrobbles_complete.to_csv("data\LFMscrobbles.tsv", sep='\t') #using tsv as some attributes contain commas
-    '''
-    playlist = getPlaylist()
-    playlist.head(50)
-    print(playlist)
+
     end_time = time.time()
 
     start_time = start_time/60
