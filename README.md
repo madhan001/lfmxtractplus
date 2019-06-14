@@ -1,3 +1,3 @@
-# Music Preference profiler
+# Last.fm for pandas
 
 documentation is WIP
