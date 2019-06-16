@@ -1,10 +1,6 @@
-{'spotify':
-  { 
-    'cid':
-    'secret':
-  }
-  'lastfm':
-   {
-     'api_key':
-   }
-}   
+#spotify credentials (visit https://developer.spotify.com)
+sp_cid:
+sp_secret:
+#last.fm api key (visit https://www.last.fm/api)
+lf_key:
+
