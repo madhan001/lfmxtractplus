@@ -4,20 +4,34 @@ import pandas as pd
 import numpy as np
 import spotipy
 import re
+import yaml
 from spotipy import oauth2
 from spotipy import SpotifyException
 
-from config import * #get api keys from config.py
+cid = secret = lfusername = lfkey = lftzone = None #vars for config.yaml
 
+def loadCFG(yaml_filepath):
+    """
+    Load config vars from yaml
+    :param yaml_filepath: path to config.yaml
+    """
+    global cid, secret, lfusername, lfkey, lftzone
+    with open(yaml_filepath, 'r') as stream:
+        config = yaml.load(stream)
+    cid = config['sp_cid']
+    secret = config['sp_secret']
+    lfusername = config['lf_username']
+    lfkey = config['lf_key']
+    lftzone = config['lf_tzone']
 
 def getSpotifyTokenInfo():
     '''
-    Used to get OAuth token from spotify.
+    Get OAuth token from spotify.
     :return token_info dict
     :return sp_oauth object
     '''
     sp_oauth = oauth2.SpotifyOAuth(client_id=cid, client_secret=secret,
-                                   redirect_uri='https://example.com/callback/',)
+                                   redirect_uri='https://example.com/callback/')
     token_info = sp_oauth.get_cached_token()
     if not token_info:
         auth_url = sp_oauth.get_authorize_url()
@@ -50,8 +64,7 @@ def authenticate():
     token_info, sp_oauth = getSpotifyTokenInfo()  # authenticate with spotify
     sp = spotipy.Spotify(auth=token_info['access_token'])  # create spotify object globally
 
-
-def getScrobbles(username = lfusername, method='recenttracks', key=lfkey, limit=200, page=1, pages=0):
+def getScrobbles(username = lfusername, method='recenttracks', key=lfkey, time_zone = lftzone, limit=200, page=1, pages=0):
     '''
     :param method: api method
     :param username/key: api credentials
@@ -106,7 +119,7 @@ def getScrobbles(username = lfusername, method='recenttracks', key=lfkey, limit=
     df = pd.DataFrame()
     df['timestamp'] = timestamps
     df['datetime'] = pd.to_datetime(df['timestamp'].astype(int), unit='s')
-    df['datetime'] = df['datetime'].dt.tz_localize('UTC').dt.tz_convert('Asia/Kolkata') #use your own timezone
+    df['datetime'] = df['datetime'].dt.tz_localize('UTC').dt.tz_convert(time_zone) #use your own timezone
     df['artist_name'] = artist_names
     df['artist_mbid'] = artist_mbids
     df['album_name'] = album_names
@@ -121,7 +134,7 @@ def mapToSpotify(scrobblesDF):
     """
     Maps track names to spotifyID and adds track length,popularity,genre to dataframe.
     :param scrobblesDF : lastfm scrobbles dataframe
-    :return dataframe with spotifyID ,track length,popularity,genre
+    :return scrobblesDF : dataframe with spotifyID ,track length,popularity,genre
     """
     track_ids = []
     length = []
@@ -301,14 +314,14 @@ def getPlaylist(user = 'billboard.com', playlist_id = '6UeSakyzhiEt4NB3UAd6NQ'):
 
     return playlistDF
 
-def generateDataset(lfuname,pages=0):
+def generateDataset(lfuname = lfusername,pages=0):
     '''
     :param lfuname: last.fm username
     :param pages: number of pages to retrieve, use pages = 0 to retrieve full listening history
-    :return: dictionary with two dataframes (complete with timestamps and library contents)
+    :return: dictionary with two dataframes ('complete' with timestamps and 'library' with library contents)
     '''
-
-    scrobblesDF_lastfm = getScrobbles(username=lfuname,pages=pages)  # get all pages form lastfm with pages = 0
+    authenticate()
+    scrobblesDF_lastfm = getScrobbles(username=lfuname, key=lfkey, pages=pages, time_zone=lftzone)  # get all pages form lastfm with pages = 0
 
     scrobblesDF_condensed = scrobblesDF_lastfm[['artist_name', 'track_name']]
 
@@ -328,7 +341,7 @@ def generateDataset(lfuname,pages=0):
 def unmappedTracks(scrobblesDF):
     '''
     :param scrobblesDF: dataframe with scrobbled tracks and trackIDs
-    :return: dataframe containing tracks with no trackIDs
+    :return scrobblesDF: dataframe containing tracks with no trackIDs
     '''
 
     noTrackID_df = scrobblesDF[scrobblesDF['trackID'].isnull()]
@@ -338,9 +351,13 @@ def unmappedTracks(scrobblesDF):
 
 def main():
     start_time = time.time()  #get running time for the script
+
+    loadCFG('config.yaml')
+    print(lfkey)
+    print(lfusername)
     authenticate() #authenicate with spotify
 
-    scrobblesDFdict = generateDataset(lfusername,0) #returns a dict
+    scrobblesDFdict = generateDataset(lfuname = lfusername, pages = 1) #returns a dict of dataframes
     scrobblesDFdict['library'].head(20)
     print("================================")
     #scrobbles_complete.to_csv("data\LFMscrobbles.tsv", sep='\t') #using tsv as some attributes contain commas
