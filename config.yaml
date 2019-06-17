@@ -4,5 +4,5 @@ sp_secret: #spotify client secret
 #last.fm api key (visit https://www.last.fm/api)
 lf_key: #last.fm api key
 lf_username: #last.fm username for data export
-
+lf_tzone: #'Asia/Kolkata' #timezone for last.fm scrobbles (must match timezone in user's settings)
 
