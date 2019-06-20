@@ -383,7 +383,18 @@ def unmappedTracks(scrobblesDF):
     noTrackID_df = scrobblesDF[scrobblesDF['trackID'].isnull()]
     return noTrackID_df
 
+def initialize(cfgPath):
+    '''
+    calls functions needed for initialization, handles loading config file,
+    initializing logger object, initializing Spotipy object.
 
+    To be called before calling other functions.
+
+    :param cfgPath: filepath for config.yaml
+    '''
+    loadCFG(cfgPath)
+    initLogger()
+    authenticate()
 
 def main():
     start_time = time.time()  # get running time for the script
