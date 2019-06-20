@@ -12,6 +12,7 @@ from spotipy import SpotifyException
 cid = secret = lfkey = lftzone = logPath = None  # vars for config.yaml
 logger = None # global logger
 
+#todo: refactor variable names to align with PEP
 
 def initLogger():
     '''
@@ -93,7 +94,6 @@ def getScrobbles(username, method='recenttracks', limit=200, page=1, pages=0):
     :return dataframe with lastfm scrobbles
     '''
 
-    #todo: display warning for invalid API key
 
     # initialize url and lists to contain response fields
     print("\nFetching data from last.fm for user "+ username)
@@ -112,6 +112,14 @@ def getScrobbles(username, method='recenttracks', limit=200, page=1, pages=0):
     # make first request, just to get the total number of pages
     request_url = url.format(method, username, key, limit, page)
     response = requests.get(request_url).json()
+    #error handling
+    if 'error' in response:
+        print("Error code : " + str(response['error']))
+        logging.critical("Error code : " + str(response['error']))
+        print("Error message : " + response['message'])
+        logging.critical("Error message : " + response['message'])
+        return None
+
     total_pages = int(response[method]['@attr']['totalPages'])
     total_scrobbles = int(response[method]['@attr']['total'])
     if pages > 0:
