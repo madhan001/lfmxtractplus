@@ -1,0 +1,6 @@
+PyYAML >= 5.1.1
+numpy >= 1.14.0
+pandas >= 0.22.0
+requests >= 2.22.0
+spotipy == 2.4.4
+tqdm >= 4.31.1
