@@ -30,13 +30,12 @@ def loadCFG(yaml_filepath):
     Load config vars from yaml
     :param yaml_filepath: path to config.yaml
     """
-    global cid, secret, lfkey, lftzone, logPath
+    global cid, secret, lfkey, logPath
     with open(yaml_filepath, 'r') as stream:
         config = yaml.load(stream)
     cid = config['sp_cid']
     secret = config['sp_secret']
     lfkey = config['lf_key']
-    lftzone = config['lf_tzone']
     logPath = config['log_path']
 
 def getSpotifyTokenInfo():
@@ -82,11 +81,12 @@ def authenticate():
     sp = spotipy.Spotify(auth=token_info['access_token'])  # create spotify object globally
 
 
-def getScrobbles(username, method='recenttracks', limit=200, page=1, pages=0):
+def getScrobbles(username, method='recenttracks',timezone ='Asia/Kolkata', limit=200, page=1, pages=0):
     '''
     Retrieves scrobbles from lastfm for a user
     :param method: api method
     :param username: last.fm username for retrieval
+    :param timezone: timezone of the user (must correspond with the timezone in user's settings)
     :param limit: api lets you retrieve up to 200 records per call
     :param page: page of results to start retrieving at
     :param pages: how many pages of results to retrieve. if 0, get as many as api can return.
@@ -108,7 +108,6 @@ def getScrobbles(username, method='recenttracks', limit=200, page=1, pages=0):
     timestamps = []
     # read from loadCFG()
     key = lfkey
-    time_zone = lftzone
     # make first request, just to get the total number of pages
     request_url = url.format(method, username, key, limit, page)
     response = requests.get(request_url).json()
@@ -152,7 +151,7 @@ def getScrobbles(username, method='recenttracks', limit=200, page=1, pages=0):
     df = pd.DataFrame()
     df['timestamp'] = timestamps
     df['datetime'] = pd.to_datetime(df['timestamp'].astype(int), unit='s')
-    df['datetime'] = df['datetime'].dt.tz_localize('UTC').dt.tz_convert(time_zone)  # use your own timezone
+    df['datetime'] = df['datetime'].dt.tz_localize('UTC').dt.tz_convert(timezone)
     df['artist_name'] = artist_names
     df['artist_mbid'] = artist_mbids
     df['album_name'] = album_names
@@ -357,13 +356,15 @@ def getPlaylist(user='billboard.com', playlist_id='6UeSakyzhiEt4NB3UAd6NQ'):
     return playlistDF
 
 
-def generateDataset(lfusername, pages=0):
+def generateDataset(lfusername,timezone = 'Asia/Kolkata', pages=0):
     '''
+    Gets user's listening history and enriches it with Spotify audio features
     :param lfusername: last.fm username
+    :param timezone: timezone of the user (must correspond with the timezone in user's settings)
     :param pages: number of pages to retrieve, use pages = 0 to retrieve full listening history
     :return scrobblesDFdict: dictionary with two dataframes ('complete' with timestamps and 'library' with library contents)
     '''
-    scrobblesDF_lastfm = getScrobbles(username=lfusername, pages=pages)  # get all pages form lastfm with pages = 0
+    scrobblesDF_lastfm = getScrobbles(username=lfusername, timezone=timezone, pages=pages)  # get all pages form lastfm with pages = 0
 
     scrobblesDF_condensed = scrobblesDF_lastfm[['artist_name', 'track_name']]
 

@@ -3,6 +3,5 @@ sp_cid:  #spotify client ID
 sp_secret:  #spotify client secret
 #last.fm api key (visit https://www.last.fm/api)
 lf_key:  #last.fm API key
-lf_tzone: 'Asia/Kolkata' #timezone for last.fm scrobbles (must match timezone in user's settings)
 #filepath for log file
 log_path: '\logs\\output.log' #path for output.log
