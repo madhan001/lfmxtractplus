@@ -14,7 +14,7 @@ logger = None # global logger
 
 #todo: refactor variable names to align with PEP
 
-def initLogger():
+def init_logger():
     '''
     Initialize logger globally
 
@@ -25,7 +25,7 @@ def initLogger():
     logger.setLevel(logging.DEBUG)
 
 
-def loadCFG(yaml_filepath):
+def load_cfg(yaml_filepath):
     """
     Load config vars from yaml
     :param yaml_filepath: path to config.yaml
@@ -38,7 +38,7 @@ def loadCFG(yaml_filepath):
     lfkey = config['lf_key']
     logPath = config['log_path']
 
-def getSpotifyTokenInfo():
+def get_spotify_token():
     '''
     Get OAuth token from spotify.
     :return token_info dict
@@ -58,7 +58,7 @@ def getSpotifyTokenInfo():
         return token_info, sp_oauth
 
 
-def tokenRefresh(token_info, sp_oauth):
+def token_refresh(token_info, sp_oauth):
     '''
     Used to refresh OAuth token if token expired
     :param token_info dict
@@ -77,11 +77,11 @@ def authenticate():
     authenticate with spotify
     '''
     global token_info, sp, sp_oauth
-    token_info, sp_oauth = getSpotifyTokenInfo()  # authenticate with spotify
+    token_info, sp_oauth = get_spotify_token()  # authenticate with spotify
     sp = spotipy.Spotify(auth=token_info['access_token'])  # create spotify object globally
 
 
-def getScrobbles(username, method='recenttracks',timezone ='Asia/Kolkata', limit=200, page=1, pages=0):
+def get_scrobbles(username, method='recenttracks', timezone ='Asia/Kolkata', limit=200, page=1, pages=0):
     '''
     Retrieves scrobbles from lastfm for a user
     :param method: api method
@@ -162,7 +162,7 @@ def getScrobbles(username, method='recenttracks',timezone ='Asia/Kolkata', limit
     return df
 
 
-def mapToSpotify(scrobblesDF):
+def map_to_spotify(scrobblesDF):
     """
     Maps track names to spotifyID and adds track length,popularity,genre to dataframe.
     :param scrobblesDF : lastfm scrobbles dataframe
@@ -203,7 +203,7 @@ def mapToSpotify(scrobblesDF):
                 logging.warning("failed to map " + track)
         except SpotifyException:
             if sp_oauth._is_token_expired(token_info):
-                tokenRefresh(token_info, sp_oauth)  # refresh OAuth token
+                token_refresh(token_info, sp_oauth)  # refresh OAuth token
             else:
                 logging.critical("SpotifyException")
 
@@ -218,7 +218,7 @@ def mapToSpotify(scrobblesDF):
     return scrobblesDF
 
 
-def mapAudioFeatures(scrobblesDF):  # todo: [for v2]pass 50 IDs at once in chunks to sp.audio_features to speedup
+def map_audio_features(scrobblesDF):  # todo: [for v2]pass 50 IDs at once in chunks to sp.audio_features to speedup
     '''
     Adds track features to dataframe with SpotifyID.
     :param scrobblesDF: dataframe with SpotifyID
@@ -284,7 +284,7 @@ def mapAudioFeatures(scrobblesDF):  # todo: [for v2]pass 50 IDs at once in chunk
                 continue
         except SpotifyException:
             if sp_oauth._is_token_expired(token_info):
-                tokenRefresh(token_info, sp_oauth)  # refresh OAuth token
+                token_refresh(token_info, sp_oauth)  # refresh OAuth token
             else:
                 logging.critical("SpotifyException")
 
@@ -306,7 +306,7 @@ def mapAudioFeatures(scrobblesDF):  # todo: [for v2]pass 50 IDs at once in chunk
     return scrobblesDF
 
 
-def getPlaylist(user='billboard.com', playlist_id='6UeSakyzhiEt4NB3UAd6NQ'):
+def get_playlist(user='billboard.com', playlist_id='6UeSakyzhiEt4NB3UAd6NQ'):
     '''
     retrives audio features of a playlist (Billboard Hot 100 is the default playlist)
     :param user: username of the playlist owner
@@ -351,12 +351,12 @@ def getPlaylist(user='billboard.com', playlist_id='6UeSakyzhiEt4NB3UAd6NQ'):
     playlistDF['lengthMS'] = pd.Series(lengthMS)
     playlistDF['popularity'] = pd.Series(popularity)
 
-    playlistDF = mapAudioFeatures(playlistDF)
+    playlistDF = map_audio_features(playlistDF)
 
     return playlistDF
 
 
-def generateDataset(lfusername,timezone = 'Asia/Kolkata', pages=0):
+def generate_dataset(lfusername, timezone ='Asia/Kolkata', pages=0):
     '''
     Gets user's listening history and enriches it with Spotify audio features
     :param lfusername: last.fm username
@@ -364,15 +364,15 @@ def generateDataset(lfusername,timezone = 'Asia/Kolkata', pages=0):
     :param pages: number of pages to retrieve, use pages = 0 to retrieve full listening history
     :return scrobblesDFdict: dictionary with two dataframes ('complete' with timestamps and 'library' with library contents)
     '''
-    scrobblesDF_lastfm = getScrobbles(username=lfusername, timezone=timezone, pages=pages)  # get all pages form lastfm with pages = 0
+    scrobblesDF_lastfm = get_scrobbles(username=lfusername, timezone=timezone, pages=pages)  # get all pages form lastfm with pages = 0
 
     scrobblesDF_condensed = scrobblesDF_lastfm[['artist_name', 'track_name']]
 
     scrobblesDF_uniques = scrobblesDF_condensed.groupby(['artist_name', 'track_name']).size().reset_index()
     scrobblesDF_uniques.rename(columns={0: 'frequency'}, inplace=True)
 
-    scrobblesDF_wTrackID_uniques = mapToSpotify(scrobblesDF_uniques)
-    scrobblesDF_wFeatures_uniques = mapAudioFeatures(scrobblesDF_wTrackID_uniques)
+    scrobblesDF_wTrackID_uniques = map_to_spotify(scrobblesDF_uniques)
+    scrobblesDF_wFeatures_uniques = map_audio_features(scrobblesDF_wTrackID_uniques)
 
     scrobblesDF_complete = pd.merge(scrobblesDF_lastfm, scrobblesDF_wFeatures_uniques, how='left',
                                     on=['track_name', 'artist_name'])
@@ -383,7 +383,7 @@ def generateDataset(lfusername,timezone = 'Asia/Kolkata', pages=0):
     return scrobblesDFdict
 
 
-def unmappedTracks(scrobblesDF):
+def unmapped_tracks(scrobblesDF):
     '''
     :param scrobblesDF: dataframe with scrobbled tracks and trackIDs
     :return scrobblesDF: dataframe containing tracks with no trackIDs
@@ -401,18 +401,19 @@ def initialize(cfgPath):
 
     :param cfgPath: filepath for config.yaml
     '''
-    loadCFG(cfgPath)
-    initLogger()
+    load_cfg(cfgPath)
+    init_logger()
     authenticate()
 
+'''
 def main():
     start_time = time.time()  # get running time for the script
 
-    loadCFG('config.yaml')
-    initLogger()
+    load_cfg('config.yaml')
+    init_logger()
     authenticate()  # authenticate with spotify
 
-    scrobblesDFdict = generateDataset(lfusername='madhan_001', pages=1)  # returns a dict of dataframes
+    scrobblesDFdict = generate_dataset(lfusername='madhan_001', pages=1)  # returns a dict of dataframes
     dic = scrobblesDFdict
 
     # scrobbles_complete.to_csv("data\LFMscrobbles.tsv", sep='\t') #using tsv as some attributes contain commas
@@ -428,3 +429,4 @@ def main():
 if __name__ == '__main__':
 
     main()
+'''
