@@ -9,7 +9,7 @@ import logging
 from spotipy import oauth2
 from spotipy import SpotifyException
 
-cid = secret = lfkey = lftzone = logPath = None  # vars for config.yaml
+cid = secret = lfkey = logPath = None  # vars for config.yaml
 logger = None # global logger
 
 #todo: refactor variable names to align with PEP
@@ -32,7 +32,7 @@ def load_cfg(yaml_filepath):
     """
     global cid, secret, lfkey, logPath
     with open(yaml_filepath, 'r') as stream:
-        config = yaml.load(stream)
+        config = yaml.safe_load(stream)
     cid = config['sp_cid']
     secret = config['sp_secret']
     lfkey = config['lf_key']
@@ -405,11 +405,12 @@ def initialize(cfgPath):
     init_logger()
     authenticate()
 
-'''
+ """
+
 def main():
     start_time = time.time()  # get running time for the script
 
-    load_cfg('config.yaml')
+    load_cfg('C:\\Users\Madhan\PycharmProjects\lfm4pandas\config.yaml')
     init_logger()
     authenticate()  # authenticate with spotify
 
@@ -429,4 +430,4 @@ def main():
 if __name__ == '__main__':
 
     main()
-'''
+"""
