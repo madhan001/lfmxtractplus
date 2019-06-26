@@ -20,10 +20,12 @@ def init_logger():
 
     '''
     global logPath, logger
-    logging.basicConfig(filename=logPath, format='%(asctime)s %(levelname)s %(message)s', filemode='w')
     logger = logging.getLogger()
     logger.setLevel(logging.DEBUG)
-
+    handler = logging.FileHandler('logPath', 'w', 'utf-8')
+    formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
 
 def load_cfg(yaml_filepath):
     """
@@ -175,13 +177,14 @@ def map_to_spotify(scrobblesDF):
     print("\nFetching SpotifyID for tracks")
     for index, row in tqdm(scrobblesDF.iterrows(), total=scrobblesDF.shape[0]):
         try:
-            artist = re.sub("'", '', row['artist_name'])  # remove single quotes from queries
-            track = re.sub("'", '', row['track_name'])
+            logging.debug("Mapping spotifyID for " + track)
+
+            artist = re.sub("[^a-zA-Z0-9_ ]", '', row['artist_name'])  # remove single quotes from queries
+            track = re.sub("[^a-zA-Z0-9_ ]", '', row['track_name'])
 
             searchDict = sp.search(q='artist:' + artist + ' track:' + track, type='track', limit=1,
                                    market='US')  # api cakk
 
-            logging.debug("Mapping spotifyID for " + track)
             # logging.debug("Mapping spotifyID for " + str(index) + " out of " + str(len(scrobblesDF.index)-1))
 
             if len(searchDict['tracks']['items']) != 0:
@@ -405,7 +408,7 @@ def initialize(cfgPath):
     init_logger()
     authenticate()
 
- """
+"""
 
 def main():
     start_time = time.time()  # get running time for the script
