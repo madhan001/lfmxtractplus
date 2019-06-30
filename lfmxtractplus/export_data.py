@@ -10,9 +10,33 @@ from spotipy import oauth2
 from spotipy import SpotifyException
 
 cid = secret = lfkey = logPath = None  # vars for config.yaml
-logger = None # global logger
+logger = None  # global logger
 
-#todo: refactor variable names to align with PEP
+
+# todo: refactor variable names to align with PEP
+
+def clean_query(q):
+    def collapse_brackets(text, brackets="()[]"):
+        count = [0] * (len(brackets) // 2)  # count open/close brackets
+        saved_chars = []
+        for character in text:
+            for i, b in enumerate(brackets):
+                if character == b:  # found bracket
+                    kind, is_close = divmod(i, 2)
+                    count[kind] += (-1) ** is_close  # `+1`: open, `-1`: close
+                    if count[kind] < 0:  # unbalanced bracket
+                        count[kind] = 0  # keep it
+                    else:  # found bracket to remove
+                        break
+            else:  # character is not a [balanced] bracket
+                if not any(count):  # outside brackets
+                    saved_chars.append(character)
+        return ''.join(saved_chars)
+
+    s = collapse_brackets(q)
+    s = re.sub("'", '', s)
+    return s
+
 
 def init_logger():
     '''
@@ -27,6 +51,7 @@ def init_logger():
     handler.setFormatter(formatter)
     logger.addHandler(handler)
 
+
 def load_cfg(yaml_filepath):
     """
     Load config vars from yaml
@@ -39,6 +64,7 @@ def load_cfg(yaml_filepath):
     secret = config['sp_secret']
     lfkey = config['lf_key']
     logPath = config['log_path']
+
 
 def get_spotify_token():
     '''
@@ -83,7 +109,7 @@ def authenticate():
     sp = spotipy.Spotify(auth=token_info['access_token'])  # create spotify object globally
 
 
-def get_scrobbles(username, method='recenttracks', timezone ='Asia/Kolkata', limit=200, page=1, pages=0):
+def get_scrobbles(username, method='recenttracks', timezone='Asia/Kolkata', limit=200, page=1, pages=0):
     '''
     Retrieves scrobbles from lastfm for a user
     :param method: api method
@@ -96,9 +122,8 @@ def get_scrobbles(username, method='recenttracks', timezone ='Asia/Kolkata', lim
     :return dataframe with lastfm scrobbles
     '''
 
-
     # initialize url and lists to contain response fields
-    print("\nFetching data from last.fm for user "+ username)
+    print("\nFetching data from last.fm for user " + username)
     url = 'https://ws.audioscrobbler.com/2.0/?method=user.get{}&user={}&api_key={}&limit={}&page={}&format=json'
     responses = []
     artist_names = []
@@ -113,7 +138,7 @@ def get_scrobbles(username, method='recenttracks', timezone ='Asia/Kolkata', lim
     # make first request, just to get the total number of pages
     request_url = url.format(method, username, key, limit, page)
     response = requests.get(request_url).json()
-    #error handling
+    # error handling
     if 'error' in response:
         print("Error code : " + str(response['error']))
         logging.critical("Error code : " + str(response['error']))
@@ -177,14 +202,14 @@ def map_to_spotify(scrobblesDF):
     print("\nFetching SpotifyID for tracks")
     for index, row in tqdm(scrobblesDF.iterrows(), total=scrobblesDF.shape[0]):
         try:
-            logging.debug("Mapping spotifyID for " + track)
 
-            artist = re.sub("[^a-zA-Z0-9_ ]", '', row['artist_name'])  # remove single quotes from queries
-            track = re.sub("[^a-zA-Z0-9_ ]", '', row['track_name'])
+            artist = clean_query(row['artist_name'])
+            track = clean_query(row['track_name'])
 
             searchDict = sp.search(q='artist:' + artist + ' track:' + track, type='track', limit=1,
                                    market='US')  # api cakk
 
+            logging.debug("Mapping spotifyID for " + track)
             # logging.debug("Mapping spotifyID for " + str(index) + " out of " + str(len(scrobblesDF.index)-1))
 
             if len(searchDict['tracks']['items']) != 0:
@@ -216,7 +241,7 @@ def map_to_spotify(scrobblesDF):
     scrobblesDF['genre_name'] = pd.Series(genre)
 
     unmapped_cnt = scrobblesDF['trackID'].isna().sum()
-    print("tracks without spotifyID : "+str(unmapped_cnt))
+    print("tracks without spotifyID : " + str(unmapped_cnt))
 
     return scrobblesDF
 
@@ -359,7 +384,7 @@ def get_playlist(user='billboard.com', playlist_id='6UeSakyzhiEt4NB3UAd6NQ'):
     return playlistDF
 
 
-def generate_dataset(lfusername, timezone ='Asia/Kolkata', pages=0):
+def generate_dataset(lfusername, timezone='Asia/Kolkata', pages=0):
     '''
     Gets user's listening history and enriches it with Spotify audio features
     :param lfusername: last.fm username
@@ -367,7 +392,8 @@ def generate_dataset(lfusername, timezone ='Asia/Kolkata', pages=0):
     :param pages: number of pages to retrieve, use pages = 0 to retrieve full listening history
     :return scrobblesDFdict: dictionary with two dataframes ('complete' with timestamps and 'library' with library contents)
     '''
-    scrobblesDF_lastfm = get_scrobbles(username=lfusername, timezone=timezone, pages=pages)  # get all pages form lastfm with pages = 0
+    scrobblesDF_lastfm = get_scrobbles(username=lfusername, timezone=timezone,
+                                       pages=pages)  # get all pages form lastfm with pages = 0
 
     scrobblesDF_condensed = scrobblesDF_lastfm[['artist_name', 'track_name']]
 
@@ -395,6 +421,7 @@ def unmapped_tracks(scrobblesDF):
     noTrackID_df = scrobblesDF[scrobblesDF['trackID'].isnull()]
     return noTrackID_df
 
+
 def initialize(cfgPath):
     '''
     calls functions needed for initialization, handles loading config file,
@@ -408,8 +435,8 @@ def initialize(cfgPath):
     init_logger()
     authenticate()
 
-"""
 
+"""
 def main():
     start_time = time.time()  # get running time for the script
 
@@ -418,7 +445,8 @@ def main():
     authenticate()  # authenticate with spotify
 
     scrobblesDFdict = generate_dataset(lfusername='madhan_001', pages=1)  # returns a dict of dataframes
-    dic = scrobblesDFdict
+    dic = scrobblesDFdict['library']
+    print(unmapped_tracks(dic))
 
     # scrobbles_complete.to_csv("data\LFMscrobbles.tsv", sep='\t') #using tsv as some attributes contain commas
 
