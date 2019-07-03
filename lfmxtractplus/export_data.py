@@ -38,20 +38,6 @@ def clean_query(q):
     return s
 
 
-def init_logger():
-    '''
-    Initialize logger globally
-
-    '''
-    global logPath, logger
-    logger = logging.getLogger()
-    logger.setLevel(logging.DEBUG)
-    handler = logging.FileHandler('logPath', 'w', 'utf-8')
-    formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
-    handler.setFormatter(formatter)
-    logger.addHandler(handler)
-
-
 def load_cfg(yaml_filepath):
     """
     Load config vars from yaml
@@ -65,6 +51,18 @@ def load_cfg(yaml_filepath):
     lfkey = config['lf_key']
     logPath = config['log_path']
 
+def init_logger():
+    '''
+    Initialize logger globally
+
+    '''
+    global logPath, logger
+    logger = logging.getLogger()
+    logger.setLevel(logging.DEBUG)
+    handler = logging.FileHandler(logPath, 'w', 'utf-8')
+    formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
 
 def get_spotify_token():
     '''
@@ -108,7 +106,7 @@ def authenticate():
     token_info, sp_oauth = get_spotify_token()  # authenticate with spotify
     sp = spotipy.Spotify(auth=token_info['access_token'])  # create spotify object globally
 
-
+#thanks to Geoff Boeing : https://github.com/gboeing/data-visualization/blob/master/lastfm-listening-history/lastfm_downloader.ipynb
 def get_scrobbles(username, method='recenttracks', timezone='Asia/Kolkata', limit=200, page=1, pages=0):
     '''
     Retrieves scrobbles from lastfm for a user
@@ -151,8 +149,8 @@ def get_scrobbles(username, method='recenttracks', timezone='Asia/Kolkata', limi
     if pages > 0:
         total_pages = min([total_pages, pages])
 
-    print('{} total tracks scrobbled by the user'.format(total_scrobbles))
-    print('{} total pages to retrieve'.format(total_pages))
+    print('\n{} total tracks scrobbled by the user'.format(total_scrobbles))
+    print('\n{} total pages to retrieve'.format(total_pages))
 
     # request each page of data one at a time
     for page in tqdm(range(1, int(total_pages) + 1, 1)):
@@ -199,7 +197,7 @@ def map_to_spotify(scrobblesDF):
     length = []
     pop = []
     genre = []
-    print("\nFetching SpotifyID for tracks")
+    print("\n\nFetching SpotifyID for tracks")
     for index, row in tqdm(scrobblesDF.iterrows(), total=scrobblesDF.shape[0]):
         try:
 
@@ -241,7 +239,7 @@ def map_to_spotify(scrobblesDF):
     scrobblesDF['genre_name'] = pd.Series(genre)
 
     unmapped_cnt = scrobblesDF['trackID'].isna().sum()
-    print("tracks without spotifyID : " + str(unmapped_cnt))
+    print("\ntracks without spotifyID : " + str(unmapped_cnt))
 
     return scrobblesDF
 
@@ -352,7 +350,7 @@ def get_playlist(user='billboard.com', playlist_id='6UeSakyzhiEt4NB3UAd6NQ'):
 
     playlist = sp.user_playlist(user=user, playlist_id=playlist_id)
     count = playlist['tracks']['total']
-    print("Fetching playlist")
+    print("\n\nFetching playlist")
     for i in tqdm(range(count)):
         # print('fetching   ' + str(i) + ' out of ' + str(count) + '   ' + playlist['tracks']['items'][i]['track']['id'])
         trackID.append(playlist['tracks']['items'][i]['track']['id'])
