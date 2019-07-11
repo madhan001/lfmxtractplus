@@ -6,7 +6,7 @@ lfmxtractplus is a library for extracting [Last.fm](https://last.fm) scrobbles w
 ## Working 
 The user's scrobbles are retrieved using last.fm's API with the [user.getRecentTracks](https://www.last.fm/api/show/user.getRecentTracks) endpoint.
 As last.fm's API doesn't provide a method to directly retrieve Spotify [audio features](https://developer.spotify.com/documentation/web-api/reference/tracks/get-audio-features/)
-we use the [sp.search()]() method to search Spotify for the track's spotifyID (trackID) and use the spotifyID to retrieve the audio feature of each track using the [sp.audio_features()]() method.
+we use the [sp.search()](https://github.com/madhan001/lfmxtractplus/blob/76ccdd2a257bc1f39d9d5b6e34bf0c67a18f50ce/lfmxtractplus/export_data.py#L207) method to search Spotify for the track's spotifyID (trackID) and use the spotifyID to retrieve the audio feature of each track using the [sp.audio_features()](https://github.com/madhan001/lfmxtractplus/blob/76ccdd2a257bc1f39d9d5b6e34bf0c67a18f50ce/lfmxtractplus/export_data.py#L270) method.
 
 ## Installation
 If you already have [Python](http://www.python.org/) on your system you can install the library simply by downloading the distribution, unpack it and install in the usual fashion:
@@ -61,9 +61,9 @@ lf_key:  #last.fm API key
 #filepath for log file
 log_path: '\logs\\output.log' #path for output.log
 ```
-##Documentation 
+## Documentation 
 
-###initialize(cfgPath)
+### initialize(cfgPath)
 Calls functions needed for initialization, handles loading config file,
 initializing logger object, initializing Spotipy object.
 
@@ -71,7 +71,7 @@ To be called before calling other functions.
 
     :param cfgPath: filepath for config.yaml
 
-###generate_dataset(lfusername, timezone='Asia/Kolkata', pages=0)
+### generate_dataset(lfusername, timezone='Asia/Kolkata', pages=0)
 Gets user's listening history and enriches it with Spotify audio features.
     
     :param lfusername: last.fm username
