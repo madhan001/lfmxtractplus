@@ -38,7 +38,8 @@ easy_install lfmxtractplus
 
 ## Quick Start
 
-To get started,simply install lfmxtractplus, initalize with config.yaml and call methods:
+To get started,simply install lfmxtractplus, initialize with config.yaml, visit the link displayed and login with your Spotify account, copy and paste the redirect url back into the Python prompt
+ and call methods:
 
 ```python
 import lfmxtractplus.export_data as lf
@@ -66,6 +67,8 @@ log_path: '\logs\\output.log' #path for output.log
 ### initialize(cfgPath)
 Calls functions needed for initialization, handles loading config file,
 initializing logger object, initializing Spotipy object.
+
+Visit the link displayed and login with your Spotify account, copy and paste the redirect url back into the Python prompt.
 
 To be called before calling other functions.
 
