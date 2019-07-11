@@ -102,6 +102,10 @@ Returns a dataframe tracks that couldn't be mapped to spotify.
     
     :return scrobblesDF: dataframe containing tracks with no trackIDs
 
+## Examples
+
+ - [Music Listening History Analysis](https://github.com/madhan001/lfmxtractplus-examples/blob/master/music_listening_history_analysis.ipynb)
+
 ## Reporting issues
 
 If you have suggestions, bugs or other issues specific to this library, file an issue on GitHub. Or just send me a pull request.
