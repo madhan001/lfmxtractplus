@@ -1,7 +1,7 @@
 # lfmxtractplus
 
 ## Description
-lfmxtractplus is a library for extracting [Last.fm](https://last.fm) scrobbles with spotify [audio features](https://developer.spotify.com/documentation/web-api/reference/tracks/get-audio-features/) for use with [Pandas](https://pandas.pydata.org/)
+lfmxtractplus is a library for extracting [Last.fm](https://last.fm) scrobbles along with spotify [audio features](https://developer.spotify.com/documentation/web-api/reference/tracks/get-audio-features/) for use with [Pandas](https://pandas.pydata.org/)
 
 ## Working 
 The user's scrobbles are retrieved using last.fm's API with the [user.getRecentTracks](https://www.last.fm/api/show/user.getRecentTracks) endpoint.
@@ -11,6 +11,23 @@ we use the [sp.search()](https://github.com/madhan001/lfmxtractplus/blob/76ccdd2
 ## Installation
 If you already have [Python](http://www.python.org/) on your system you can install the library simply by downloading the distribution, unpack it and install in the usual fashion:
 
+## Changelog
+
+ - v1.2  
+    - Encapsulate methods inside a class
+    - Added token refreshing for get_playlist()
+    - Optimized imports
+ 
+ - v1.1  
+    - Added support for outputting logs to a file instead of the console
+    - Fixed progress bars
+    - Move timezone out of config.yaml
+
+ - v1.0  
+    - Initial version
+    
+ 
+   
 ```bash
 python setup.py install
 ```
@@ -42,10 +59,10 @@ To get started,simply install lfmxtractplus, initialize with config.yaml, visit 
  and call methods:
 
 ```python
-import lfmxtractplus.export_data as lf
+import lfmxtractplus as lxp
 import pandas as pd
 
-lf.initialize('config.yaml')
+lf = lxp.lfmxtractplus('config.yaml') #path to config.yaml
 scrobbles_dict = lf.generate_dataset(lfusername='madhan_001', pages=0)
 scrobbles_df = scrobbles_dict['complete']
 ```
