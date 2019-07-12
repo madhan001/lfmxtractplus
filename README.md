@@ -14,7 +14,7 @@ If you already have [Python](http://www.python.org/) on your system you can inst
 ## Changelog
 
  - v1.2  
-    - Encapsulate methods inside a class
+    - Encapsulated methods inside a class
     - Added token refreshing for get_playlist()
     - Optimized imports
  
