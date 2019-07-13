@@ -81,7 +81,8 @@ log_path: '\logs\\output.log' #path for output.log
 ```
 ## Documentation 
 
-### initialize(cfgPath)
+### lfmxtractplus(cfgPath)
+
 Calls functions needed for initialization, handles loading config file,
 initializing logger object, initializing Spotipy object.
 
@@ -90,8 +91,10 @@ Visit the link displayed and login with your Spotify account, copy and paste the
 To be called before calling other functions.
 
     :param cfgPath: filepath for config.yaml
+    
+    :return lfmxtractplus: object to call other functions with
 
-### generate_dataset(lfusername, timezone='Asia/Kolkata', pages=0)
+### lf.generate_dataset(lfusername, timezone='Asia/Kolkata', pages=0)
 Gets user's listening history and enriches it with Spotify audio features.
     
     :param lfusername: last.fm username
@@ -102,7 +105,7 @@ Gets user's listening history and enriches it with Spotify audio features.
 
 Warning : Does not support multiple timezones for scrobbles    
    
-### get_playlist(user='billboard.com', playlist_id='6UeSakyzhiEt4NB3UAd6NQ')
+### lf.get_playlist(user='billboard.com', playlist_id='6UeSakyzhiEt4NB3UAd6NQ')
 
 Retrieves audio features of a playlist (Billboard Hot 100 is the default playlist)
     
@@ -111,7 +114,7 @@ Retrieves audio features of a playlist (Billboard Hot 100 is the default playlis
     
     :return: a dataframe with audio features of a playlist
     
-### unmapped_tracks(scrobblesDF)
+### lf.unmapped_tracks(scrobblesDF)
 
 Returns a dataframe tracks that couldn't be mapped to spotify.
 
